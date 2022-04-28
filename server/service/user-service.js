@@ -5,11 +5,13 @@ const bcrypt = require("bcrypt");
 const uuid = require("uuid");
 const mailService = require("./mail-service");
 const tokenService = require("./token-service");
+const UserDto = require("../dtos/user-dto");
 
 class UserService {
   async registration(email, password) {
     const candidate = UserModel.findOne({ email }); // Проверяем, есть ли юзер с таким email
 
+    // Если юзер есть, то генерируем ошибку
     if (candidate) {
       throw new Error(`Пользователь с адресом ${email} уже существует`);
     }
@@ -20,9 +22,17 @@ class UserService {
       email,
       password: hashPassword,
       activationLink,
-    });
+    }); // Создаем юзера в БД
     await mailService.sendActivationMail(email, activationLink); // Отправка письма на почту с подтверждением акк.
-    const token = tokenService.generateTokens();
+
+    const userDto = new UserDto(user); // id, email, isActivated
+    const token = tokenService.generateTokens({ ...userDto }); // Генерируем access and refresh токены на основе урезанный модели юзера
+    await tokenService.saveToken(userDto.id, token.refreshToken); // Сохраняем токен в БД
+
+    return {
+      ...tokens,
+      user: userDto,
+    };
   }
 }
 
