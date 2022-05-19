@@ -23,7 +23,10 @@ class UserService {
       password: hashPassword,
       activationLink,
     }); // Создаем юзера в БД
-    await mailService.sendActivationMail(email, activationLink); // Отправка письма на почту с подтверждением акк.
+    await mailService.sendActivationMail(
+      email,
+      `${process.env.API_URL}/api/activate/${activationLink}`
+    ); // Отправка письма на почту с подтверждением акк.
 
     const userDto = new UserDto(user); // id, email, isActivated
     const tokens = tokenService.generateTokens({ ...userDto }); // Генерируем access and refresh токены на основе урезанный модели юзера
