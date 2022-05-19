@@ -9,14 +9,14 @@ const UserDto = require("../dtos/user-dto");
 
 class UserService {
   async registration(email, password) {
-    const candidate = UserModel.findOne({ email }); // Проверяем, есть ли юзер с таким email
+    const candidate = await UserModel.findOne({ email }); // Проверяем, есть ли юзер с таким email
 
     // Если юзер есть, то генерируем ошибку
     if (candidate) {
       throw new Error(`Пользователь с адресом ${email} уже существует`);
     }
 
-    const hashPassword = bcrypt.hash(password, 3); // Хешируем пароль, чтобы в БД пароль не лежал открытым
+    const hashPassword = await bcrypt.hash(password, 3); // Хешируем пароль, чтобы в БД пароль не лежал открытым
     const activationLink = uuid.v4(); // Генерируем ссылку для активации аккаунта
     const user = await UserModel.create({
       email,
@@ -26,8 +26,8 @@ class UserService {
     await mailService.sendActivationMail(email, activationLink); // Отправка письма на почту с подтверждением акк.
 
     const userDto = new UserDto(user); // id, email, isActivated
-    const token = tokenService.generateTokens({ ...userDto }); // Генерируем access and refresh токены на основе урезанный модели юзера
-    await tokenService.saveToken(userDto.id, token.refreshToken); // Сохраняем токен в БД
+    const tokens = tokenService.generateTokens({ ...userDto }); // Генерируем access and refresh токены на основе урезанный модели юзера
+    await tokenService.saveToken(userDto.id, tokens.refreshToken); // Сохраняем токен в БД
 
     return {
       ...tokens,
